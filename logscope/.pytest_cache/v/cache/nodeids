@@ -1,5 +1,6 @@
 [
   "tests/test_parser.py::test_parse_file_crlf_and_out_of_order",
+  "tests/test_parser.py::test_parse_file_invalid_utf8_counted_as_malformed",
   "tests/test_parser.py::test_parse_file_invalid_utf8_raises_decode_error",
   "tests/test_parser.py::test_parse_line_malformed[2026-10-01 09:01 ERROR missing seconds]",
   "tests/test_parser.py::test_parse_line_malformed[2026-10-01 09:01:21 DEBUG nope]",

@@ -39,9 +39,15 @@ class LogParser:
 
         def _iter_records() -> Iterator[LogRecord]:
             nonlocal malformed
-            with path.open("r", encoding="utf-8", errors="strict") as fh:
+            with path.open("rb") as fh:
                 for line_number, raw_line in enumerate(fh, start=1):
-                    line = raw_line.rstrip("\r\n")
+                    try:
+                        decoded_line = raw_line.decode("utf-8")
+                    except UnicodeDecodeError:
+                        malformed += 1
+                        continue
+
+                    line = decoded_line.rstrip("\r\n")
                     record = self.parse_line(line=line, line_number=line_number)
                     if record is None:
                         malformed += 1

@@ -51,16 +51,18 @@ def test_parse_file_crlf_and_out_of_order(tmp_path: Path) -> None:
     records = list(result.records)
 
     assert [r.level for r in records] == ["ERROR", "INFO"]
-    assert [r.line_number for r in records] == [1, 3]
+    assert [r.line_number for r in records] == [1, 2]
     assert result.get_malformed_lines() == 1
 
 
-def test_parse_file_invalid_utf8_raises_decode_error(tmp_path: Path) -> None:
+def test_parse_file_invalid_utf8_counted_as_malformed(tmp_path: Path) -> None:
     file_path = tmp_path / "invalid.log"
     file_path.write_bytes(b"2026-10-01 09:00:00 INFO ok\n\xff\n")
 
     parser = LogParser()
     result = parser.parse_file(file_path)
+    records = list(result.records)
 
-    with pytest.raises(UnicodeDecodeError):
-        list(result.records)
+    assert len(records) == 1
+    assert records[0].level == "INFO"
+    assert result.get_malformed_lines() == 1
