@@ -4,6 +4,7 @@ from collections import Counter
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from pathlib import Path
+from typing import Literal
 
 from .parser import iter_records_with_malformed_count
 
@@ -32,6 +33,26 @@ class TimelineResult:
     file: str
     bucket: str
     buckets: list[TimelineBucket]
+    valid_lines: int
+    malformed_lines: int
+
+
+@dataclass(frozen=True)
+class GrepMatch:
+    line_number: int
+    timestamp: str
+    level: str
+    message: str
+    raw: str
+
+
+@dataclass(frozen=True)
+class GrepResult:
+    command: str
+    file: str
+    filters: dict[str, str | None]
+    matches: list[GrepMatch]
+    matched_count: int
     valid_lines: int
     malformed_lines: int
 
@@ -129,6 +150,64 @@ def run_timeline(file_path: str | Path, bucket: str = "15m") -> TimelineResult:
         file=Path(file_path).name,
         bucket=bucket,
         buckets=timeline_buckets,
+        valid_lines=valid_lines,
+        malformed_lines=get_malformed_lines(),
+    )
+
+
+def _parse_since_timestamp(since: str) -> datetime:
+    for fmt in ("%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M"):
+        try:
+            parsed = datetime.strptime(since, fmt)
+            if fmt == "%Y-%m-%d %H:%M":
+                return parsed.replace(second=0)
+            return parsed
+        except ValueError:
+            continue
+    raise ValueError("Invalid --since timestamp")
+
+
+def run_grep(
+    file_path: str | Path,
+    *,
+    level: Literal["INFO", "WARN", "ERROR"] | None = None,
+    since: str | None = None,
+) -> GrepResult:
+    if level is not None and level not in {"INFO", "WARN", "ERROR"}:
+        raise ValueError("Invalid log level")
+
+    since_dt = _parse_since_timestamp(since) if since is not None else None
+    since_text = since_dt.strftime("%Y-%m-%d %H:%M:%S") if since_dt is not None else None
+
+    records, get_malformed_lines = iter_records_with_malformed_count(file_path)
+
+    matches: list[GrepMatch] = []
+    valid_lines = 0
+
+    for record in records:
+        valid_lines += 1
+
+        if level is not None and record.level != level:
+            continue
+        if since_dt is not None and record.timestamp < since_dt:
+            continue
+
+        matches.append(
+            GrepMatch(
+                line_number=record.line_number,
+                timestamp=record.timestamp_text,
+                level=record.level,
+                message=record.message,
+                raw=record.raw,
+            )
+        )
+
+    return GrepResult(
+        command="grep",
+        file=Path(file_path).name,
+        filters={"level": level, "since": since_text},
+        matches=matches,
+        matched_count=len(matches),
         valid_lines=valid_lines,
         malformed_lines=get_malformed_lines(),
     )

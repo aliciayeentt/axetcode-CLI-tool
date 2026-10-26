@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from logscope.commands import run_summary, run_timeline
+from logscope.commands import run_grep, run_summary, run_timeline
 
 
 FIXTURES = Path(__file__).parent / "fixtures"
@@ -117,3 +117,73 @@ def test_run_timeline_rejects_invalid_bucket(tmp_path: Path, bucket: str) -> Non
 
     with pytest.raises(ValueError, match="Invalid bucket duration"):
         run_timeline(log_path, bucket=bucket)
+
+
+def test_run_grep_without_filters_returns_all_valid_lines() -> None:
+    result = run_grep(FIXTURES / "sample.log")
+
+    assert result.command == "grep"
+    assert result.file == "sample.log"
+    assert result.filters == {"level": None, "since": None}
+    assert result.matched_count == 5
+    assert result.valid_lines == 5
+    assert result.malformed_lines == 0
+    assert [match.line_number for match in result.matches] == [1, 2, 3, 4, 5]
+
+
+def test_run_grep_with_level_and_since_filters() -> None:
+    result = run_grep(FIXTURES / "sample.log", level="ERROR", since="2026-10-01 09:00")
+
+    assert result.filters == {"level": "ERROR", "since": "2026-10-01 09:00:00"}
+    assert result.matched_count == 3
+    assert [match.raw for match in result.matches] == [
+        "2026-10-01 09:01:21 ERROR Database connection failed",
+        "2026-10-01 09:03:47 ERROR Database connection failed",
+        "2026-10-01 09:18:12 ERROR Request timed out",
+    ]
+
+
+def test_run_grep_preserves_file_order_even_when_timestamps_out_of_order(tmp_path: Path) -> None:
+    log_path = tmp_path / "out-of-order.log"
+    log_path.write_text(
+        "2026-10-01 09:18:12 ERROR third\n"
+        "2026-10-01 08:59:58 ERROR first\n"
+        "2026-10-01 09:00:00 ERROR second\n",
+        encoding="utf-8",
+    )
+
+    result = run_grep(log_path, level="ERROR")
+
+    assert [match.raw for match in result.matches] == [
+        "2026-10-01 09:18:12 ERROR third",
+        "2026-10-01 08:59:58 ERROR first",
+        "2026-10-01 09:00:00 ERROR second",
+    ]
+
+
+def test_run_grep_counts_malformed_lines(tmp_path: Path) -> None:
+    log_path = tmp_path / "malformed.log"
+    log_path.write_text(
+        "2026-10-01 09:00:00 INFO ok\n"
+        "bad line\n"
+        "2026-10-01 09:00:01 WARN warn\n",
+        encoding="utf-8",
+    )
+
+    result = run_grep(log_path)
+
+    assert result.matched_count == 2
+    assert result.valid_lines == 2
+    assert result.malformed_lines == 1
+
+
+@pytest.mark.parametrize("bad_since", ["2026/10/01 09:00", "2026-10-01", "abc"])
+def test_run_grep_rejects_invalid_since(bad_since: str) -> None:
+    with pytest.raises(ValueError, match="Invalid --since timestamp"):
+        run_grep(FIXTURES / "sample.log", since=bad_since)
+
+
+@pytest.mark.parametrize("bad_level", ["debug", "ERR", "error"])
+def test_run_grep_rejects_invalid_level(bad_level: str) -> None:
+    with pytest.raises(ValueError, match="Invalid log level"):
+        run_grep(FIXTURES / "sample.log", level=bad_level)  # type: ignore[arg-type]
