@@ -1,4 +1,12 @@
 [
+  "tests/test_cli.py::test_grep_json_output",
+  "tests/test_cli.py::test_grep_md_custom_output_path",
+  "tests/test_cli.py::test_grep_text_writes_counts_to_stderr",
+  "tests/test_cli.py::test_refuse_overwrite_md_output",
+  "tests/test_cli.py::test_reject_output_without_md_format",
+  "tests/test_cli.py::test_summary_json_output",
+  "tests/test_cli.py::test_summary_md_default_output_path",
+  "tests/test_cli.py::test_timeline_json_output",
   "tests/test_commands.py::test_run_grep_counts_malformed_lines",
   "tests/test_commands.py::test_run_grep_preserves_file_order_even_when_timestamps_out_of_order",
   "tests/test_commands.py::test_run_grep_rejects_invalid_level[ERR]",
