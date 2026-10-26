@@ -1,4 +1,7 @@
 [
+  "tests/test_commands.py::test_run_summary_empty_file",
+  "tests/test_commands.py::test_run_summary_on_spec_sample",
+  "tests/test_commands.py::test_run_summary_with_malformed_and_tie_breaking",
   "tests/test_parser.py::test_parse_file_crlf_and_out_of_order",
   "tests/test_parser.py::test_parse_file_invalid_utf8_counted_as_malformed",
   "tests/test_parser.py::test_parse_file_invalid_utf8_raises_decode_error",
