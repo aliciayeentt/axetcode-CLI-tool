@@ -1,0 +1,11 @@
+pyproject.toml
+src/logscope/__init__.py
+src/logscope/cli.py
+src/logscope/parser.py
+src/logscope.egg-info/PKG-INFO
+src/logscope.egg-info/SOURCES.txt
+src/logscope.egg-info/dependency_links.txt
+src/logscope.egg-info/entry_points.txt
+src/logscope.egg-info/requires.txt
+src/logscope.egg-info/top_level.txt
+tests/test_parser.py

@@ -1,0 +1,3 @@
+{
+  "tests/test_parser.py::test_parse_file_crlf_and_out_of_order": true
+}
