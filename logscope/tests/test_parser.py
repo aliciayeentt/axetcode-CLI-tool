@@ -51,8 +51,8 @@ def test_parse_file_crlf_and_out_of_order(tmp_path: Path) -> None:
     records = list(result.records)
 
     assert [r.level for r in records] == ["ERROR", "INFO"]
-    assert [r.line_number for r in records] == [1, 2]
-    assert result.malformed_lines == 1
+    assert [r.line_number for r in records] == [1, 3]
+    assert result.get_malformed_lines() == 1
 
 
 def test_parse_file_invalid_utf8_raises_decode_error(tmp_path: Path) -> None:

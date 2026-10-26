@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
+from collections.abc import Callable
 from typing import Iterator, Literal
 
 Level = Literal["INFO", "WARN", "ERROR"]
@@ -22,7 +23,7 @@ class LogRecord:
 @dataclass(frozen=True)
 class ParseResult:
     records: Iterator[LogRecord]
-    malformed_lines: int
+    get_malformed_lines: Callable[[], int]
 
 
 class LogParser:
@@ -47,7 +48,7 @@ class LogParser:
                         continue
                     yield record
 
-        return ParseResult(records=_iter_records(), malformed_lines=malformed)
+        return ParseResult(records=_iter_records(), get_malformed_lines=lambda: malformed)
 
     def parse_line(self, line: str, line_number: int) -> LogRecord | None:
         if not line:
@@ -79,15 +80,11 @@ class LogParser:
         )
 
 
-def iter_records_with_malformed_count(file_path: str | Path) -> tuple[Iterator[LogRecord], callable[[], int]]:
+def iter_records_with_malformed_count(file_path: str | Path) -> tuple[Iterator[LogRecord], Callable[[], int]]:
     """Return a streaming iterator and a callback to retrieve malformed count.
 
     The malformed count is finalized after consuming the iterator.
     """
     parser = LogParser()
     parse_result = parser.parse_file(file_path)
-
-    def get_malformed_count() -> int:
-        return parse_result.malformed_lines
-
-    return parse_result.records, get_malformed_count
+    return parse_result.records, parse_result.get_malformed_lines
